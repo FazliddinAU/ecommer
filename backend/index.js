@@ -1,7 +1,9 @@
+// packages
 import path from "path";
 import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import cors from "cors"; // 🔹 YANGI
 
 // Utiles
 import connectDB from "./config/db.js";
@@ -18,11 +20,25 @@ connectDB();
 
 const app = express();
 
+// 🔹 CORS SETTINGS
+const allowedOrigins = ['https://mern-e-commerce-store-gray.vercel.app'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Render health checklar uchun origin bo‘lmaydi
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// API Routes
 app.use("/api/users", userRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/products", productRoutes);
@@ -33,15 +49,7 @@ app.get("/api/config/paypal", (req, res) => {
   res.send({ clientId: process.env.PAYPAL_CLIENT_ID });
 });
 
-// Static uploads
 const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname + "/uploads")));
-
-// 👉 Serve frontend
-app.use(express.static(path.join(__dirname, "/frontend/build")));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "frontend", "build", "index.html"));
-});
 
 app.listen(port, () => console.log(`Server running on port: ${port}`));
